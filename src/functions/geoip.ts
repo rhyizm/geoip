@@ -18,8 +18,6 @@ maxmind.open<maxmind.CityResponse>(dbPath)
   });
 
 export async function geoip(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-  context.log(`URL "${request.url}" に対してHTTP関数が処理されました。`);
-
   // クエリパラメータからIPアドレスを取得
   const ip = request.query.get("ip");
   if (!ip) {
@@ -36,14 +34,12 @@ export async function geoip(request: HttpRequest, context: InvocationContext): P
     const country = geoInfo.country?.names?.ja || "不明";
     const city = geoInfo.city?.names?.ja || "不明";
 
-    console.log(`IPアドレス ${ip} の地理情報: ${country} ${city}`);
-
     return {
       status: 200,
       jsonBody: { country, city }
     };
   } catch (err) {
-    context.log(`IPアドレス ${ip} の検索中にエラーが発生しました:`, err);
+    context.error(`IPアドレス ${ip} の検索中にエラーが発生しました:`, err);
     return { status: 500, body: "内部サーバーエラーが発生しました。" };
   }
 };
@@ -51,6 +47,6 @@ export async function geoip(request: HttpRequest, context: InvocationContext): P
 // 関数をHTTPトリガーとして登録
 app.http('geoip', {
   methods: ['GET'],
-  authLevel: 'anonymous',
+  authLevel: 'function',
   handler: geoip
 });
