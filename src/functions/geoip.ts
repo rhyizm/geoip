@@ -31,8 +31,8 @@ export async function geoip(request: HttpRequest, context: InvocationContext): P
       return { status: 404, body: "指定されたIPアドレスの地理情報が見つかりません。" };
     }
 
-    const country = geoInfo.country?.names?.ja || "不明";
-    const city = geoInfo.city?.names?.ja || "不明";
+    const country = geoInfo.country?.names?.en|| "unknown";
+    const city = geoInfo.city?.names?.en || "unknown";
 
     return {
       status: 200,
