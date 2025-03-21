@@ -37,7 +37,11 @@ export async function geoip(request: HttpRequest, context: InvocationContext): P
 
     return {
       status: 200,
-      jsonBody: { country, city }
+      jsonBody: {
+        countryEn: country,
+        cityEn: city,
+        ...geoInfo
+      }
     };
   } catch (err) {
     context.error(`Error occurred while looking up IP address ${ip}:`, err);
