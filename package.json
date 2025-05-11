@@ -1,0 +1,31 @@
+{
+  "name": "geoip-azfunc",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+  "move-db": "mkdir -p dist/src/data && mv src/data/GeoLite2-City.mmdb dist/src/data/",
+  "build": "npm run clean && tsc && npm run move-db",
+    "watch": "tsc -w",
+    "clean": "rimraf dist",
+    "prestart": "npm run clean && npm run build",
+    "start": "func start",
+    "prestart:local": "npm run build && mkdir -p dist/src/data && cp -r src/data/GeoLite2-City.mmdb dist/src/data/GeoLite2-City.mmdb",
+    "start:local": "npm run prestart:local && func start",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@types/axios": "^0.9.36",
+    "axios": "^1.8.3",
+    "maxmind": "^4.3.24"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.x",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.2.6",
+    "typescript": "^4.0.0"
+  },
+  "main": "dist/src/{index.js,functions/*.js}"
+}

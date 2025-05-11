@@ -1,0 +1,95 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js project to Azure Function App - geoip-r
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'   # build ジョブでのみ使用
+  NODE_VERSION: '22.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read            # actions/checkout 用
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # -----------------------
+      # GeoLite2 DB を取得
+      # -----------------------
+      - name: Download GeoLite2 database
+        run: |
+          mkdir -p src/data
+          curl -sSL "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=${MAXMIND_LICENSE_KEY}&suffix=tar.gz" -o src/data/GeoLite2-City.tar.gz
+          tar -xzf src/data/GeoLite2-City.tar.gz --strip-components=1 -C src/data
+          rm src/data/GeoLite2-City.tar.gz
+        env:
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
+
+      - name: Verify GeoLite2 database exists
+        run: |
+          if [ ! -f "src/data/GeoLite2-City.mmdb" ]; then
+            echo "GeoLite2 database download failed!"
+            exit 1
+          fi
+
+      # -----------------------
+      # Build / Test
+      # -----------------------
+      - name: Install, build, and test
+        shell: bash
+        run: |
+          pushd '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          npm install
+          npm run build
+          popd
+
+      # -----------------------
+      # Package (ZIP)  ※この ZIP をそのままデプロイに使う
+      # -----------------------
+      - name: Zip artifact for deployment
+        run: |
+          zip -r release.zip .
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+          path: .
+
+      # ★ unzip は不要 — release.zip をそのまま渡す
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: geoip-r
+          slot-name: Production
+          package: release.zip
+          sku: flexconsumption
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6330432B661F47F7B2BAB2C6926E7E8B }}
